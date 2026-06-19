@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1f6feb">
+  <title>Mes tâches</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #1f6feb;
+      --done: #238636;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+    }
+    header {
+      padding: 24px 0 16px;
+      text-align: center;
+    }
+    h1 { margin: 0; font-size: 1.6rem; }
+    .count { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 14px;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--card);
+      color: var(--text);
+    }
+    input[type="text"]:focus { outline: 2px solid var(--accent); border-color: transparent; }
+    button {
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .add-btn {
+      padding: 0 20px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    li.done .label { text-decoration: line-through; color: var(--muted); }
+    .check {
+      width: 26px;
+      height: 26px;
+      min-width: 26px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    li.done .check { background: var(--done); border-color: var(--done); }
+    .label { flex: 1; font-size: 1.05rem; word-break: break-word; }
+    .del {
+      background: transparent;
+      color: var(--muted);
+      font-size: 1.3rem;
+      padding: 4px 8px;
+    }
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      margin-top: 40px;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>✅ Mes tâches</h1>
+    <div class="count" id="count"></div>
+  </header>
+
+  <div class="input-row">
+    <input type="text" id="newTask" placeholder="Nouvelle tâche…" autocomplete="off">
+    <button class="add-btn" id="addBtn">Ajouter</button>
+  </div>
+
+  <ul id="list"></ul>
+  <p class="empty" id="empty">Aucune tâche pour l'instant 🎉</p>
+
+  <script>
+    const KEY = 'myphone-todos';
+    const DEFAULT_TASKS = ['Concombres', 'Carottes', 'Beurre'];
+    const listEl = document.getElementById('list');
+    const inputEl = document.getElementById('newTask');
+    const addBtn = document.getElementById('addBtn');
+    const countEl = document.getElementById('count');
+    const emptyEl = document.getElementById('empty');
+
+    let todos = load();
+    if (localStorage.getItem(KEY) === null) save();
+
+    function load() {
+      const saved = localStorage.getItem(KEY);
+      if (saved === null) {
+        // Première ouverture : on pré-remplit la liste de courses
+        return DEFAULT_TASKS.map(text => ({ text, done: false }));
+      }
+      try { return JSON.parse(saved) || []; }
+      catch { return []; }
+    }
+    function save() {
+      localStorage.setItem(KEY, JSON.stringify(todos));
+    }
+
+    function render() {
+      listEl.innerHTML = '';
+      todos.forEach((t, i) => {
+        const li = document.createElement('li');
+        if (t.done) li.classList.add('done');
+
+        const check = document.createElement('button');
+        check.className = 'check';
+        check.textContent = t.done ? '✓' : '';
+        check.setAttribute('aria-label', 'Terminer');
+        check.onclick = () => { todos[i].done = !todos[i].done; save(); render(); };
+
+        const label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = t.text;
+
+        const del = document.createElement('button');
+        del.className = 'del';
+        del.textContent = '✕';
+        del.setAttribute('aria-label', 'Supprimer');
+        del.onclick = () => { todos.splice(i, 1); save(); render(); };
+
+        li.append(check, label, del);
+        listEl.appendChild(li);
+      });
+
+      const remaining = todos.filter(t => !t.done).length;
+      countEl.textContent = todos.length
+        ? `${remaining} à faire · ${todos.length} au total`
+        : '';
+      emptyEl.style.display = todos.length ? 'none' : 'block';
+    }
+
+    function add() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+      todos.unshift({ text, done: false });
+      inputEl.value = '';
+      save();
+      render();
+      inputEl.focus();
+    }
+
+    addBtn.onclick = add;
+    inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+
+    render();
+
+    // Service worker pour fonctionner hors-ligne
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
