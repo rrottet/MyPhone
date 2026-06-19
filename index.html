@@ -35,8 +35,9 @@
       display: flex;
       gap: 8px;
       margin-bottom: 20px;
+      align-items: flex-end;
     }
-    input[type="text"] {
+    #newTask {
       flex: 1;
       padding: 14px;
       font-size: 1rem;
@@ -44,19 +45,25 @@
       border-radius: 10px;
       background: var(--card);
       color: var(--text);
+      font-family: inherit;
+      resize: none;
+      line-height: 1.4;
+      max-height: 160px;
+      overflow-y: auto;
     }
-    input[type="text"]:focus { outline: 2px solid var(--accent); border-color: transparent; }
+    #newTask:focus { outline: 2px solid var(--accent); border-color: transparent; }
     button {
       border: none;
       cursor: pointer;
       font-size: 1rem;
     }
     .add-btn {
-      padding: 0 20px;
+      padding: 14px 20px;
       background: var(--accent);
       color: #fff;
       border-radius: 10px;
       font-weight: 600;
+      white-space: nowrap;
     }
     ul { list-style: none; padding: 0; margin: 0; }
     li {
@@ -83,7 +90,7 @@
       color: #fff;
     }
     li.done .check { background: var(--done); border-color: var(--done); }
-    .label { flex: 1; font-size: 1.05rem; word-break: break-word; }
+    .label { flex: 1; font-size: 1.05rem; word-break: break-word; white-space: pre-wrap; }
     .del {
       background: transparent;
       color: var(--muted);
@@ -105,7 +112,7 @@
   </header>
 
   <div class="input-row">
-    <input type="text" id="newTask" placeholder="Nouvelle tâche…" autocomplete="off">
+    <textarea id="newTask" rows="1" placeholder="Nouvelle tâche…&#10;(plusieurs lignes possibles)"></textarea>
     <button class="add-btn" id="addBtn">Ajouter</button>
   </div>
 
@@ -168,13 +175,25 @@
       if (!text) return;
       todos.unshift({ text, done: false });
       inputEl.value = '';
+      autoGrow();
       save();
       render();
       inputEl.focus();
     }
 
+    // Ajuste la hauteur du champ au contenu (multi-lignes)
+    function autoGrow() {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = inputEl.scrollHeight + 'px';
+    }
+
     addBtn.onclick = add;
-    inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+    inputEl.addEventListener('input', autoGrow);
+    // Entrée = nouvelle ligne ; Ctrl/Cmd + Entrée = ajouter la tâche
+    inputEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); add(); }
+    });
+    autoGrow();
 
     render();
 
