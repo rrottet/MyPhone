@@ -1,4 +1,4 @@
-const CACHE = 'taches-v1';
+const CACHE = 'taches-v2';
 const ASSETS = ['index.html', 'manifest.webmanifest', 'icon.svg'];
 
 self.addEventListener('install', e => {
